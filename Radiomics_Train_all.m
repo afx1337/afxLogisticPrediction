@@ -22,15 +22,16 @@ reduce(9).val = 1; % CBV x tici
 reduce(10).type = 'factor';
 reduce(10).val = 'CBV';
 
-FWHM = [9 13 5 0];
+FWHM = [9 13 5 0];     %%%%FWHM?
 
 [~,space.XYZmm,space.dim,space.mat] = afxVolumeLoad('masks\space2mm_small.nii');
+
 
 for iReduce = 0:length(reduce)
     for iFWHM = 1:length(FWHM)
         s = tic;
-        % design
-        load('data\Radiomics_Training_Leipzig\input\demographics\design.mat');
+        % get design type
+        load('data\Radiomics_Training_Leipzig\input\demographics\design_bm1.mat');   
         if iReduce == 0
             design.analysisName = 'full_model';
         else
@@ -38,7 +39,7 @@ for iReduce = 0:length(reduce)
         end
         design.FWHM = FWHM(iFWHM);  % spatial smoothing 5,9,13
         design.nFold = 5;           % number of folds in k-fold cross validation
-        design.minPerfusion = 10;   % minimum perfusion maps per parameter
+        design.minPerfusion = 1;   % minimum perfusion maps per parameter
         design.minLesion = .05;     % minimum lesion coverage
         design.interactions(1).val = {'CBF' 'tici'};
         design.interactions(2).val = {'CBV' 'tici'};
@@ -53,13 +54,18 @@ for iReduce = 0:length(reduce)
                 error('something went wrong.');
             end
         end
+        
         % daten laden
-        [x,y,masks,design] = afxPrepareDesign(design,space);
+        brainmask = 'masks\brainmask.nii';
+        [x,y,masks,design] = afxPrepareDesign(design,space,brainmask);
         % k-fold crossvalidation (fitting des glms, prediction, abspeichern aller ergebnisse)
         designFile = afxKFold(x,y,masks,space,design);
         % evaluation
         afxEvaluatePredictions(designFile);
         fprintf('Elapsed time is %.1f min.\n',toc(s)/60);
+        
+        %free up memory
+        clearvars -except FWHM iFWHM reduce iReduce space
     end
 end
 
