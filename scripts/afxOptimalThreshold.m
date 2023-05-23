@@ -6,9 +6,13 @@ function [optThr,absDiff] = afxOptimalThreshold(yfit,y,tol,inverse)
     %load('D:\projects\afxRs\afxLogisticPrediction\tmp_optThr.mat');
     
     gridSize = 10;
-    sumVolGT = sum(y,2);
-    boundaries = [ min(yfit(:))  max(yfit(:))];
-    while abs(diff(boundaries)) > 2*tol
+    %reshape y: 
+    y2 = y(:);
+    sumVolGT = sum(y2);
+    
+    %shape boundaries
+    boundaries = [ min(yfit)  max(yfit)];
+    while abs(diff(boundaries)) > 2*tol %tol = 0.1
         boundaries = afxFindMinGrid(yfit,sumVolGT,inverse,boundaries,gridSize);
     end
     optThr = round(mean(boundaries),floor(-log10(tol)));
@@ -17,9 +21,9 @@ end
     
 function absDiff = afxAbsDiff(yfit,sumVolGT,threshold,inverse)
     if inverse
-        absDiff = sum(abs(sumVolGT-sum(yfit<threshold,2)));
+        absDiff = sum(abs(sumVolGT-sum(yfit<threshold,1)));
     else
-        absDiff = sum(abs(sumVolGT-sum(yfit>threshold,2)));
+        absDiff = sum(abs(sumVolGT-sum(yfit>threshold,1)));
     end
 end
 

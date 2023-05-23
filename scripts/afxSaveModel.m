@@ -16,24 +16,8 @@ function [meanRSquared] = afxSaveModel(stats,masks,space,scale,design)
         afxVolumeWrite(fullfile(destDir,strcat(prefix,'mask_',maskNames{i},'.nii')),masks.(maskNames{i}),space.dim,'int16',space.mat);
     end
 
-    % write stats
-    statNames = fieldnames(stats);
-    for iStat = 1:length(statNames)
-        % get values and threshold
-        val = [stats.(statNames{iStat})];
-        if strcmp(statNames{iStat},{'t'}),    val(val > 30) = 31; val(val < -30) = -31; end
-        if strcmp(statNames{iStat},{'beta'}), val(val > 30) = 31; val(val < -30) = -31; end
-        % write to disk
-        for iParam = 1:size(val,1)
-            if size(val,1) == 1
-                fname = sprintf('%s%s.nii',prefix,statNames{iStat});
-            else
-                fname = sprintf('%s%s_%03i.nii',prefix,statNames{iStat},iParam);
-            end
-            afxVolumeWrite(fullfile(destDir,fname),afxDeMask(masks.analysis,val(iParam,:)),space.dim,'int16',space.mat);
-        end
-        clear val;
-    end
+    % write model/stats
+    save(fullfile(destDir,strcat(prefix,'stats.mat')),'stats');
     
     % save other data (disign, meanRSquared, scale)
     save(fullfile(destDir,strcat(prefix,'design.mat')),'design');

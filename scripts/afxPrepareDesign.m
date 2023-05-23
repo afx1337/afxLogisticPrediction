@@ -1,7 +1,7 @@
-function [x,y,masks,design] = afxPrepareDesign(design,space,idxMask)
+function [x,y,masks,design] = afxPrepareDesign(design,space,brainmask,idxMask)
 
     if ~exist('idxMask','var')
-        idxMask = true(1,length(design.patients));
+        idxMask = true(1,length(design.patients)); 
     end
 
     nPatients = length(design.patients);
@@ -12,8 +12,8 @@ function [x,y,masks,design] = afxPrepareDesign(design,space,idxMask)
     s = tic;
     fprintf('Loading images ... ');
     x = nan(nPatients,nPredictors,nVoxels);
-    y = false(nPatients,nVoxels);
-    for iPatient = 1:nPatients
+    y = false(nPatients,nVoxels);    %%creates matrix of the dimension npatients x nVoxels
+    for iPatient = 1:nPatients    
         for iPredictor = 1:nPredictors
             val = design.patients(iPatient).xRaw{iPredictor};
             if isnumeric(val)
@@ -45,7 +45,8 @@ function [x,y,masks,design] = afxPrepareDesign(design,space,idxMask)
     % create masks
     masks.perfusion = squeeze(sum(~isnan(x(idxMask,idxCBF,:))))';
     masks.lesions = sum(y(idxMask,:));
-    masks.analysis = (masks.perfusion > design.minPerfusion*(nPredictors+1+length(design.interactions))) & (masks.lesions > nPatients*design.minLesion);
+    masks.analysis = logical(round(afxVolumeResample(brainmask,space.XYZmm,1)'));
+    masks.informative = (masks.perfusion > design.minPerfusion*(nPredictors+1+length(design.interactions))) & (masks.lesions > nPatients*design.minLesion);
     % replace NaNs with 0 before smoothing
     xNaN = isnan(x); x(xNaN) = 0;
     % avoid cbf thesholding edge artifacts with low values due to smoothing
@@ -57,8 +58,8 @@ function [x,y,masks,design] = afxPrepareDesign(design,space,idxMask)
     % restore explicit masks
     x(xNaN) = NaN;
     % discard data outside mask
-    y = y(:,masks.analysis);
-    x = x(:,:,masks.analysis);
+    y = y(:,masks.analysis);      
+    x = x(:,:,masks.analysis);  
     % add interactions
     [x,design] = afxAddInteractions(x,design);
     fprintf('done (%.2f min).\n',toc(s)/60);
